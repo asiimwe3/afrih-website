@@ -71,7 +71,13 @@ static const char *FOOTER =
 
 /* FAQ JS */
 static const char *FAQ_JS =
-    "<script>\ndocument.querySelectorAll('.faq-q').forEach(function(q){\nq.addEventListener('click',function(){this.parentElement.classList.toggle('open')});\n});\ndocument.querySelectorAll('form').forEach(function(f){\nif(!f.action.includes('/submit-'))return;\nf.addEventListener('submit',function(e){e.preventDefault();\nvar btn=f.querySelector('button');var orig=btn.innerHTML;\nbtn.innerHTML='Submitting...';btn.disabled=true;\nfetch(f.action,{method:'POST',body:new FormData(f)}).then(function(r){return r.json()})\n.then(function(r){btn.innerHTML=orig;btn.disabled=false;\nvar alert=f.querySelector('.alert')||f.previousElementSibling;\nif(alert&&alert.classList.contains('alert')){alert.className='alert alert-'+(r.success?'success':'error')+' show';\nalert.textContent=r.message||'Submitted';setTimeout(function(){alert.classList.remove('show')},6000);}\nif(r.success)f.reset();}).catch(function(){btn.innerHTML=orig;btn.disabled=false});})}});\n</script>";
+    "<script>\n/* Auto-set active nav based on path */
+(function(){var path=window.location.pathname;
+var links=document.querySelectorAll('.nav a');
+links.forEach(function(a){a.classList.remove('active');
+var href=a.getAttribute('href');
+if(href===path||(path==='/'&&href==='/')||(path!=='/'&&href!=='/'&&path.indexOf(href)===0)){a.classList.add('active');}});})();
+document.querySelectorAll('.faq-q').forEach(function(q){\nq.addEventListener('click',function(){this.parentElement.classList.toggle('open')});\n});\ndocument.querySelectorAll('form').forEach(function(f){\nif(!f.action.includes('/submit-'))return;\nf.addEventListener('submit',function(e){e.preventDefault();\nvar btn=f.querySelector('button');var orig=btn.innerHTML;\nbtn.innerHTML='Submitting...';btn.disabled=true;\nfetch(f.action,{method:'POST',body:new FormData(f)}).then(function(r){return r.json()})\n.then(function(r){btn.innerHTML=orig;btn.disabled=false;\nvar alert=f.querySelector('.alert')||f.previousElementSibling;\nif(alert&&alert.classList.contains('alert')){alert.className='alert alert-'+(r.success?'success':'error')+' show';\nalert.textContent=r.message||'Submitted';setTimeout(function(){alert.classList.remove('show')},6000);}\nif(r.success)f.reset();}).catch(function(){btn.innerHTML=orig;btn.disabled=false});})}});\n</script>";
 
 /* Page wrapper */
 static char *page_wrap(const char *title, const char *body) {
