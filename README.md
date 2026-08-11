@@ -1,37 +1,40 @@
-# AFRIH — Afrika Integrated Holdings
+# AFRIH — Afrika Integrated Holdings (C Server)
 
-A world-class, investor-ready website for a Pan-African economic group mobilizing $1B+ in capital across 12 sectors and 54 African nations.
+A Pan-African investment group website served by a hand-written HTTP server in pure C.
 
-## Features
+## What this is
 
-- 9 comprehensive pages: Home, Investment Thesis, Business Model, Sectors, Governance, Impact, Roadmap, FAQ, Investor Onboarding
-- Working backend: contact form, investor inquiry, newsletter signup (Base44 backend functions)
-- Professional AI-generated imagery
-- Premium dark-theme design with Inter font family
-- Full mobile responsive with hamburger menu
-- SEO optimized with Open Graph tags
-- Legal disclaimer for investor protection
-- Real-time form submission with loading states and success/error alerts
+All 11 pages of the AFRIH website, served by a custom C HTTP server with POSIX sockets and pthreads. No frameworks, no JavaScript libraries, no HTML files — every page is generated dynamically by C code.
 
-## Tech Stack
+## Pages
 
-- Frontend: Single-page HTML/CSS/JS (no framework, zero dependencies)
-- Backend: Base44 serverless functions (Deno)
-- Database: Base44 entities (ContactMessage, InvestorInquiry, NewsletterSubscriber)
-- Hosting: GitHub Pages
-- Images: AI-generated via Base44
+1. Home (/)
+2. Investment Thesis (/thesis)
+3. Business Model (/model)
+4. Sectors (/sectors)
+5. Governance (/governance)
+6. Impact & ESG (/impact)
+7. Roadmap (/roadmap)
+8. FAQ (/faq)
+9. Investor Onboarding (/invest)
+10. Contact (/contact)
 
-## Investment Vehicles
+Plus: robots.txt, sitemap.xml, and form handlers for contact, investor inquiry, and newsletter.
 
-1. Growth Fund ($10M-$50M tickets, 18-25% IRR target)
-2. Infrastructure Fund ($50M-$250M, 12-18% IRR target)
-3. Venture Fund ($1M-$10M tickets, 25-40%+ IRR target)
-4. Diaspora Platform (from $10K, open access)
-5. Joint Ventures (case by case)
-6. Impact Vehicle (grant-aligned)
+## Build & Run
 
-## Origin
+```bash
+gcc -O2 -o afrih_server afrih_server.c -lpthread
+./afrih_server
+```
 
-Based on the Afrika Integrated Holdings Master Plan — a concept blueprint for a Pan-African capital-and-enterprise ecosystem.
+Open http://localhost:8080
 
-*This is a concept master plan, not a legal or investment offering.*
+## Docker
+
+```bash
+docker build -t afrih .
+docker run -p 80:8080 afrih
+```
+
+Built by Asiimwe Derick — DeryCode Technologies for Afrika Integrated Holdings.
