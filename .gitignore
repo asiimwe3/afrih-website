@@ -1,0 +1,13 @@
+# Build output
+afrih_server
+
+# Form submissions (sensitive data)
+submissions/
+
+# Logs
+*.log
+server.log
+
+# OS files
+.DS_Store
+Thumbs.db

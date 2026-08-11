@@ -7,5 +7,6 @@ FROM debian:bookworm-slim
 WORKDIR /app
 COPY --from=build /app/afrih_server .
 COPY public/ ./public/
+RUN mkdir -p submissions
 EXPOSE 8080
 CMD ["./afrih_server", "8080"]

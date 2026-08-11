@@ -20,6 +20,8 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#include <time.h>
+#include <sys/stat.h>
 
 #define PORT 8080
 #define BUFSZ 65536
@@ -83,10 +85,37 @@ static char *page_wrap(const char *title, const char *body) {
     sb_append(&sb, "<meta property=\"og:description\" content=\"A diversified Pan-African economic group mobilizing capital, developing enterprises, and training the next generation of African talent across 12 sectors.\">");
     sb_append(&sb, "<meta property=\"og:image\" content=\"https://media.base44.com/images/public/6a13d9e8c07abf0ac4c23880/1dc96c134_generated_image.png\">");
     sb_append(&sb, "<link rel=\"preconnect\" href=\"https://fonts.googleapis.com\">");
+    sb_append(&sb, "<link rel=\"manifest\" href=\"/manifest.json\">");
     sb_append(&sb, "<link href=\"https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap\" rel=\"stylesheet\">");
     sb_append(&sb, "<style>");
     sb_append(&sb, CSS);
     sb_append(&sb, "</style>");
+    
+    /* JSON-LD Structured Data */
+    sb_append(&sb, "<script type=\"application/ld+json\">");
+    sb_append(&sb, "{\"@context\":\"https://schema.org\",\"@type\":\"Organization\","
+        "\"name\":\"Afrika Integrated Holdings (AFRIH)\","
+        "\"description\":\"A diversified Pan-African economic group mobilizing $1B+ in capital across 12 sectors, training 100K+ youth, and creating 50K+ jobs across 54 African nations.\","
+        "\"url\":\"https://afrih.example\","
+        "\"logo\":\"https://media.base44.com/images/public/6a13d9e8c07abf0ac4c23880/1dc96c134_generated_image.png\","
+        "\"foundingDate\":\"2026\","
+        "\"areaServed\":\"Africa\","
+        "\"sameAs\":[\"https://github.com/asiimwe3/afrih-website\"]"
+        "}");
+    sb_append(&sb, "</script>");
+    
+    /* Additional JSON-LD for pages with youth/training content */
+    if (strstr(title, "Youth") || strstr(title, "AFRIH \u2014")) {
+        sb_append(&sb, "<script type=\"application/ld+json\">");
+        sb_append(&sb, "{\"@context\":\"https://schema.org\",\"@type\":\"EducationalOrganization\","
+            "\"name\":\"AFRIH Training Academy\","
+            "\"description\":\"Youth training programs in digital skills, agribusiness, energy, construction, healthcare, finance, logistics, entrepreneurship, and tourism across Africa.\","
+            "\"areaServed\":\"Africa\","
+            "\"audience\":{\"@type\":\"Audience\",\"audienceType\":\"Young adults aged 18-35\"}"
+            "}");
+        sb_append(&sb, "</script>");
+    }
+    
     sb_append(&sb, "</head><body>");
     sb_append(&sb, NAV);
     sb_append(&sb, "<div class=\"page active\">");
@@ -215,6 +244,7 @@ static char *page_404(void) {
     sb_append(&sb, "<meta charset=\"UTF-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1.0\">");
     sb_append(&sb, "<title>404 \u2014 AFRIH</title>");
     sb_append(&sb, "<link rel=\"preconnect\" href=\"https://fonts.googleapis.com\">");
+    sb_append(&sb, "<link rel=\"manifest\" href=\"/manifest.json\">");
     sb_append(&sb, "<link href=\"https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap\" rel=\"stylesheet\">");
     sb_append(&sb, "<style>");
     sb_append(&sb, CSS);
@@ -285,6 +315,94 @@ static void serve_static(int fd, const char *path) {
     free(buf);
 }
 
+
+/* Parse URL-encoded form data and save to file */
+static void url_decode(char *s) {
+    char *dst = s;
+    while (*s) {
+        if (*s == '+') { *dst++ = ' '; s++; }
+        else if (*s == '%' && s[1] && s[2]) {
+            char hex[3] = {s[1], s[2], 0};
+            *dst++ = (char)strtol(hex, NULL, 16);
+            s += 3;
+        } else { *dst++ = *s++; }
+    }
+    *dst = '\0';
+}
+
+static char *get_field(const char *body, const char *name) {
+    char pattern[256];
+    snprintf(pattern, sizeof(pattern), "%s=", name);
+    char *start = strstr(body, pattern);
+    if (!start) return strdup("");
+    start += strlen(pattern);
+    char *end = strchr(start, '&');
+    if (!end) end = start + strlen(start);
+    size_t len = end - start;
+    char *val = malloc(len + 1);
+    memcpy(val, start, len);
+    val[len] = '\0';
+    url_decode(val);
+    return val;
+}
+
+static void save_submission(const char *type, const char *body) {
+    /* Create submissions directory */
+    mkdir("submissions", 0755);
+    
+    char fname[512];
+    time_t now = time(NULL);
+    struct tm *t = localtime(&now);
+    char ts[64];
+    strftime(ts, sizeof(ts), "%Y%m%d_%H%M%S", t);
+    snprintf(fname, sizeof(fname), "submissions/%s_%s.csv", type, ts);
+    
+    /* Get common fields */
+    char *name = get_field(body, "name");
+    char *email = get_field(body, "email");
+    char *org = get_field(body, "organization");
+    char *msg = get_field(body, "message");
+    
+    /* Get type-specific fields */
+    char *itype = get_field(body, "interestType");
+    char *invtype = get_field(body, "investorType");
+    char *ticket = get_field(body, "ticketSize");
+    char *sector = get_field(body, "sectorInterest");
+    char *country = get_field(body, "countryInterest");
+    
+    FILE *f = fopen(fname, "w");
+    if (f) {
+        fprintf(f, "field,value\n");
+        fprintf(f, "type,%s\n", type);
+        fprintf(f, "timestamp,%s\n", ts);
+        fprintf(f, "name,%s\n", name);
+        fprintf(f, "email,%s\n", email);
+        if (org && *org) fprintf(f, "organization,%s\n", org);
+        if (itype && *itype) fprintf(f, "interestType,%s\n", itype);
+        if (invtype && *invtype) fprintf(f, "investorType,%s\n", invtype);
+        if (ticket && *ticket) fprintf(f, "ticketSize,%s\n", ticket);
+        if (sector && *sector) fprintf(f, "sectorInterest,%s\n", sector);
+        if (country && *country) fprintf(f, "countryInterest,%s\n", country);
+        if (msg && *msg) fprintf(f, "message,%s\n", msg);
+        fclose(f);
+    }
+    
+    /* Also append to a single log file */
+    snprintf(fname, sizeof(fname), "submissions/all_submissions.log");
+    f = fopen(fname, "a");
+    if (f) {
+        fprintf(f, "[%s] %s | name=%s email=%s", ts, type, name, email);
+        if (org && *org) fprintf(f, " org=%s", org);
+        if (msg && *msg) fprintf(f, " msg=%s", msg);
+        fprintf(f, "\n");
+        fclose(f);
+    }
+    
+    free(name); free(email); free(org); free(msg);
+    free(itype); free(invtype); free(ticket); free(sector); free(country);
+}
+
+
 /* Request handler */
 static void *handle_client(void *arg) {
     int fd = *(int*)arg;
@@ -316,8 +434,15 @@ static void *handle_client(void *arg) {
         else if (strcmp(path, "/invest") == 0) send_html(fd, page_invest());
         else if (strcmp(path, "/contact") == 0) send_html(fd, page_contact());
         else if (strcmp(path, "/robots.txt") == 0) {
-            const char *r = "User-agent: *\nAllow: /\nSitemap: https://afrih.example/sitemap.xml\n";
+            const char *r = "User-agent: *\nAllow: /\nDisallow: /submissions/\nSitemap: https://afrih.example/sitemap.xml\n";
             send_response(fd, 200, "text/plain", r, strlen(r));
+        }
+        else if (strcmp(path, "/manifest.json") == 0) {
+            const char *m = "{\"name\":\"AFRIH\",\"short_name\":\"AFRIH\","
+                "\"description\":\"Afrika Integrated Holdings\","
+                "\"start_url\":\"/\",\"display\":\"standalone\","
+                "\"background_color\":\"#0b0b14\",\"theme_color\":\"#6c63ff\"}";
+            send_response(fd, 200, "application/manifest+json", m, strlen(m));
         }
         else if (strcmp(path, "/sitemap.xml") == 0) {
             const char *sm = "<?xml version='1.0' encoding='UTF-8'?>\n"
@@ -343,14 +468,26 @@ static void *handle_client(void *arg) {
         }
     }
     else if (strcmp(method, "POST") == 0) {
-        if (strcmp(path, "/submit-investor") == 0)
+        /* Find body after \r\n\r\n */
+        char *body = strstr(req, "\r\n\r\n");
+        if (body) body += 4; else body = "";
+        
+        if (strcmp(path, "/submit-investor") == 0) {
+            save_submission("investor", body);
             send_json(fd, 1, "Investor inquiry received. We will respond within 5 business days.");
-        else if (strcmp(path, "/submit-contact") == 0)
+        }
+        else if (strcmp(path, "/submit-contact") == 0) {
+            save_submission("contact", body);
             send_json(fd, 1, "Message received. We will get back to you shortly.");
-        else if (strcmp(path, "/submit-newsletter") == 0)
+        }
+        else if (strcmp(path, "/submit-newsletter") == 0) {
+            save_submission("newsletter", body);
             send_json(fd, 1, "Subscribed successfully. Welcome to AFRIH.");
-        else if (strcmp(path, "/submit-youth") == 0)
+        }
+        else if (strcmp(path, "/submit-youth") == 0) {
+            save_submission("youth", body);
             send_json(fd, 1, "Youth program application received. We will contact you about the next cohort.");
+        }
         else
             send_json(fd, 0, "Unknown action.");
     }
