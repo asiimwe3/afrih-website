@@ -1,0 +1,17 @@
+version: '3.8'
+
+services:
+  afrih:
+    build: .
+    container_name: afrih-server
+    ports:
+      - "80:8080"
+    volumes:
+      - ./submissions:/app/submissions
+      - ./public:/app/public
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
