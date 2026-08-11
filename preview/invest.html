@@ -390,4 +390,11 @@ var alert=f.querySelector('.alert')||f.previousElementSibling;
 if(alert&&alert.classList.contains('alert')){alert.className='alert alert-'+(r.success?'success':'error')+' show';
 alert.textContent=r.message||'Submitted';setTimeout(function(){alert.classList.remove('show')},6000);}
 if(r.success)f.reset();}).catch(function(){btn.innerHTML=orig;btn.disabled=false});})}});
+var path=window.location.pathname;
+document.querySelectorAll('.nav a').forEach(function(a){
+a.classList.remove('active');
+var href=a.getAttribute('href');
+if(href===path||(path==='/'&&href==='/'))a.classList.add('active');
+else if(path!=='/'&&href!=='/'&&path.indexOf(href)===0)a.classList.add('active');
+});
 </script></body></html>
