@@ -1,0 +1,16 @@
+<script>
+document.querySelectorAll('.faq-q').forEach(function(q){
+q.addEventListener('click',function(){this.parentElement.classList.toggle('open')});
+});
+document.querySelectorAll('form').forEach(function(f){
+if(!f.action.includes('/submit-'))return;
+f.addEventListener('submit',function(e){e.preventDefault();
+var btn=f.querySelector('button');var orig=btn.innerHTML;
+btn.innerHTML='Submitting...';btn.disabled=true;
+fetch(f.action,{method:'POST',body:new FormData(f)}).then(function(r){return r.json()})
+.then(function(r){btn.innerHTML=orig;btn.disabled=false;
+var alert=f.querySelector('.alert')||f.previousElementSibling;
+if(alert&&alert.classList.contains('alert')){alert.className='alert alert-'+(r.success?'success':'error')+' show';
+alert.textContent=r.message||'Submitted';setTimeout(function(){alert.classList.remove('show')},6000);}
+if(r.success)f.reset();}).catch(function(){btn.innerHTML=orig;btn.disabled=false});})}});
+</script>
